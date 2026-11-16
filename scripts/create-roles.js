@@ -105,6 +105,19 @@ for (const role of missing) {
 for (const role of desired) {
   const current = roles.find(existing => existing.name.toLowerCase() === role.name.toLowerCase());
   if (!current?.id) throw new Error(`Não foi possível localizar o ID do cargo ${role.name}.`);
+
+  // O bot está atribuído ao FOUNDER, que é seu cargo mais alto.
+  // A hierarquia do Micup não permite que um membro edite o próprio cargo mais alto.
+  // Como ADMINISTRATOR (8) já concede todas as permissões, validamos o FOUNDER
+  // e seguimos sem tentar alterá-lo pela API.
+  if (role.name === 'FOUNDER') {
+    if (String(current.permissions) !== '8') {
+      throw new Error('O cargo FOUNDER precisa estar com Administrador ativado (permissions 8). Ajuste-o manualmente no Micup; o bot não pode editar seu próprio cargo mais alto.');
+    }
+    console.log('VERIFICADO: FOUNDER — Administrador total (sem PATCH no próprio cargo).');
+    continue;
+  }
+
   await sleep(700);
   const updated = await request(`/guilds/${GUILD_ID}/roles/${current.id}`, {
     method: 'PATCH',
