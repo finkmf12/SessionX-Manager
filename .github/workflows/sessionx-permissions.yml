@@ -1,0 +1,38 @@
+name: Session X - Configurar permissões dos cargos
+
+on:
+  workflow_dispatch:
+    inputs:
+      guild_id:
+        description: 'ID numérico do servidor Session X'
+        required: true
+        default: '1571678876961607681'
+        type: string
+      mode:
+        description: 'preview apenas simula; apply configura as permissões'
+        required: true
+        type: choice
+        options:
+          - preview
+          - apply
+        default: preview
+      confirmation:
+        description: 'Digite CONFIGURAR_PERMISSOES somente para aplicar'
+        required: false
+        type: string
+
+jobs:
+  permissions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Revisar e configurar permissões
+        env:
+          MICUP_TOKEN: ${{ secrets.MICUP_TOKEN }}
+          MICUP_GUILD_ID: ${{ inputs.guild_id }}
+          MODE: ${{ inputs.mode }}
+          CONFIRM: ${{ inputs.confirmation }}
+        run: node scripts/configure-role-permissions.js
