@@ -46,36 +46,44 @@ async function request(path, options = {}) {
   throw new Error(`Limite da API persistente em ${path}.`);
 }
 
-// Cargos novos recebem permissões próprias zeradas. As permissões de @everyone
-// e as configurações de cargos existentes não são alteradas.
+// Permissões documentadas pela API Fluxer/Micup. Os valores são máscaras decimais.
 const desired = [
-  { name: 'FOUNDER', color: 0xFF3B6B },
-  { name: 'ADMIN', color: 0xFF8A00 },
-  { name: 'MODERADOR', color: 0x00D9FF },
-  { name: 'VIP', color: 0xB45CFF },
-  { name: 'MEMBRO', color: 0x2ECC71 },
-  { name: 'BOT', color: 0x95A5A6 }
+  { name: 'FOUNDER', color: 0xFF3B6B, permissions: '8' }, // Administrador total
+  { name: 'ADMIN', color: 0xFF8A00, permissions: '1101524902070' }, // Gestão do servidor, canais, cargos, mensagens e membros
+  { name: 'MODERADOR', color: 0x00D9FF, permissions: '1099675213830' }, // Expulsar, banir, moderar mensagens, timeout e voz
+  { name: 'VIP', color: 0xB45CFF, permissions: '104188993' }, // Membro + criar convites
+  { name: 'MEMBRO', color: 0x2ECC71, permissions: '104188992' }, // Conversar, ver canais, anexos, reações e voz
+  { name: 'BOT', color: 0x95A5A6, permissions: '104197184' } // Base de membro + gerenciar mensagens
 ];
 
 const roles = await request(`/guilds/${GUILD_ID}/roles`);
 if (!Array.isArray(roles)) throw new Error('A API não retornou a lista de cargos esperada.');
 
-const missing = desired.filter(role =>
-  !roles.some(existing => existing.name.toLowerCase() === role.name.toLowerCase())
-);
+const findRole = name => roles.find(existing => existing.name.toLowerCase() === name.toLowerCase());
+const missing = desired.filter(role => !findRole(role.name));
 
-console.log('=== SESSION X | CARGOS NEON ===');
+console.log('=== SESSION X | PERMISSÕES DOS CARGOS ===');
 console.log(`Servidor: ${GUILD_ID}`);
-console.log(`Cargos existentes: ${roles.length}`);
 console.log(`Modo: ${MODE === 'preview' ? 'SIMULAÇÃO — sem alterações' : 'APLICAÇÃO'}`);
-console.log(missing.length
-  ? missing.map((role, index) => `${index + 1}. CRIAR ${role.name} — cor #${role.color.toString(16).padStart(6, '0')}`).join('\n')
-  : 'Todos os cargos propostos já existem.');
-console.log('Nenhum cargo existente será editado ou excluído.');
-console.log('Nenhuma permissão administrativa será concedida automaticamente.');
+console.log('FOUNDER: Administrador total.');
+console.log('ADMIN: gerenciar servidor, canais, cargos, mensagens e membros; sem Administrador total.');
+console.log('MODERADOR: expulsar/banir, moderar mensagens, timeout e moderação de voz.');
+console.log('VIP: permissões de membro e criar convites.');
+console.log('MEMBRO: visualizar canais, conversar, anexos, reações e voz.');
+console.log('BOT: permissões básicas e gerenciar mensagens.');
+console.log('Os canais e as configurações de canais não serão alterados.');
 
-if (MODE === 'preview') process.exit(0);
+if (MODE === 'preview') {
+  for (const role of desired) {
+    const current = findRole(role.name);
+    console.log(current
+      ? `CONFIGURARIA ${role.name}: permissões ${current.permissions ?? 'desconhecidas'} → ${role.permissions}`
+      : `CRIARIA ${role.name} com permissões ${role.permissions}`);
+  }
+  process.exit(0);
+}
 
+// Cria apenas algum cargo da lista que ainda esteja ausente.
 for (const role of missing) {
   await sleep(6500);
   const created = await request(`/guilds/${GUILD_ID}/roles`, {
@@ -83,12 +91,30 @@ for (const role of missing) {
     body: JSON.stringify({
       name: role.name,
       color: role.color,
-      permissions: '0',
+      permissions: role.permissions,
       hoist: true,
       mentionable: false
     })
   });
-  console.log(`CRIADO: ${created.name} (ID: ${created.id}, posição: ${created.position})`);
+  roles.push(created);
+  console.log(`CRIADO: ${created.name} (ID: ${created.id})`);
 }
 
-console.log('Criação dos cargos concluída. Confira a hierarquia no Micup antes de atribuir cargos à equipe.');
+// Atualiza somente a máscara de permissões dos seis cargos; nome, cor, posição,
+// menções, canais e demais cargos permanecem intactos.
+for (const role of desired) {
+  const current = roles.find(existing => existing.name.toLowerCase() === role.name.toLowerCase());
+  if (!current?.id) throw new Error(`Não foi possível localizar o ID do cargo ${role.name}.`);
+  await sleep(700);
+  const updated = await request(`/guilds/${GUILD_ID}/roles/${current.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ permissions: role.permissions })
+  });
+  if (String(updated?.permissions) !== role.permissions) {
+    throw new Error(`A API não confirmou as permissões esperadas para ${role.name}.`);
+  }
+  console.log(`PERMISSÕES APLICADAS: ${role.name} — ${updated.permissions}`);
+}
+
+console.log('Concluído: permissões dos seis cargos aplicadas e verificadas.');
+console.log('IMPORTANTE: confira a hierarquia dos cargos no Micup. Para moderar ou gerenciar cargos, MODERADOR/ADMIN/BOT precisam estar acima dos cargos que devem administrar.');
