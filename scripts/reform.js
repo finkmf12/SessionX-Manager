@@ -7,7 +7,7 @@ if (!TOKEN || !GUILD_ID) {
   console.error('Configure MICUP_TOKEN (GitHub Secret) e informe MICUP_GUILD_ID.');
   process.exit(1);
 }
-if (!/^\\d{5,30}$/.test(GUILD_ID)) {
+if (!/^\d{5,30}$/.test(GUILD_ID)) {
   console.error('MICUP_GUILD_ID inválido. Informe o ID numérico do servidor Session X.');
   process.exit(1);
 }
