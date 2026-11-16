@@ -20,7 +20,7 @@ if (MODE === 'apply' && CONFIRM !== 'APLICAR') {
 const discoveryResponse = await fetch('https://micup.gg/.well-known/fluxer');
 if (!discoveryResponse.ok) throw new Error(`Falha na descoberta Micup: HTTP ${discoveryResponse.status}`);
 const discovery = await discoveryResponse.json();
-const api = discovery?.endpoints?.api_public?.replace(/\\/$/, '');
+const api = discovery?.endpoints?.api_public?.replace(/\/$/, '');
 if (!api) throw new Error('O Micup não informou endpoints.api_public.');
 
 async function request(path, options = {}) {
