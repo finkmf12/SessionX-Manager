@@ -7,7 +7,7 @@ if (!TOKEN || !GUILD_ID) {
   console.error('Configure MICUP_TOKEN (GitHub Secret) e informe MICUP_GUILD_ID.');
   process.exit(1);
 }
-if (!/^\d{5,30}$/.test(GUILD_ID)) {
+if (!/^\\d{5,30}$/.test(GUILD_ID)) {
   console.error('MICUP_GUILD_ID inválido. Informe o ID numérico do servidor Session X.');
   process.exit(1);
 }
@@ -20,7 +20,7 @@ if (MODE === 'apply' && CONFIRM !== 'APLICAR') {
 const discoveryResponse = await fetch('https://micup.gg/.well-known/fluxer');
 if (!discoveryResponse.ok) throw new Error(`Falha na descoberta Micup: HTTP ${discoveryResponse.status}`);
 const discovery = await discoveryResponse.json();
-const api = discovery?.endpoints?.api_public?.replace(/\/$/, '');
+const api = discovery?.endpoints?.api_public?.replace(/\\/$/, '');
 if (!api) throw new Error('O Micup não informou endpoints.api_public.');
 
 async function request(path, options = {}) {
@@ -73,19 +73,22 @@ if (!Array.isArray(channels)) throw new Error('A API não retornou a lista de ca
 const originalChannels = channels;
 const plan = [];
 for (const category of desired) {
-  let parent = channels.find(c => c.type === 4 && c.name.toLowerCase() === category.name.toLowerCase());
+  const parent = channels.find(c => c.type === 4 && c.name.toLowerCase() === category.name.toLowerCase());
   if (!parent) plan.push(`CRIAR categoria: ${category.name}`);
   for (const child of category.children) {
     const found = channels.find(c => c.type === child.type && c.name.toLowerCase() === child.name.toLowerCase());
     if (!found) plan.push(`CRIAR canal: ${category.name} / ${child.name}`);
-    else if (found.parent_id !== (parent?.id || null)) plan.push(`MOVER canal existente: ${found.name} → ${category.name}`);
+    else if (found.parent_id !== (parent?.id || null)) {
+      if (child.existing) plan.push(`MOVER canal existente: ${found.name} → ${category.name}`);
+      else plan.push(`PRESERVAR canal com mesmo nome fora da categoria: ${found.name} (sem mover)`);
+    }
   }
 }
 console.log('=== SESSION X | REFORMA NEON ===');
 console.log(`Servidor: ${GUILD_ID}`);
 console.log(`Canais atuais encontrados: ${originalChannels.length}`);
 console.log(`Modo: ${MODE === 'preview' ? 'SIMULAÇÃO — nenhuma alteração será feita' : 'APLICAÇÃO AUTORIZADA'}`);
-console.log(plan.length ? plan.map((p, i) => `${i + 1}. ${p}`).join('\n') : 'Estrutura já está atualizada.');
+console.log(plan.length ? plan.map((p, i) => `${i + 1}. ${p}`).join('\\n') : 'Estrutura já está atualizada.');
 console.log('Nenhum canal ou configuração existente será excluído.');
 
 if (MODE === 'preview') process.exit(0);
@@ -109,13 +112,15 @@ for (const category of desired) {
       });
       channels.push(found);
       console.log(`Criado canal: ${child.name}`);
-    } else if (found.parent_id !== parent.id) {
+    } else if (found.parent_id !== parent.id && child.existing) {
       const moved = await request(`/channels/${found.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ parent_id: parent.id })
       });
       Object.assign(found, moved);
       console.log(`Organizado canal existente: ${child.name}`);
+    } else if (found.parent_id !== parent.id) {
+      console.log(`Preservado sem mover: ${child.name} (já existe em outra categoria)`);
     }
   }
 }
