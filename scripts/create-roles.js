@@ -4,7 +4,7 @@ const MODE = process.env.MODE || 'preview';
 const CONFIRM = process.env.CONFIRM || '';
 
 if (!TOKEN || !GUILD_ID) throw new Error('Configure MICUP_TOKEN e MICUP_GUILD_ID.');
-if (!/^\\d{5,30}$/.test(GUILD_ID)) throw new Error('MICUP_GUILD_ID inválido.');
+if (!/^\d{5,30}$/.test(GUILD_ID)) throw new Error('MICUP_GUILD_ID inválido.');
 if (!['preview', 'apply'].includes(MODE)) throw new Error('MODE deve ser preview ou apply.');
 if (MODE === 'apply' && CONFIRM !== 'APLICAR_CARGOS') {
   throw new Error('Aplicação bloqueada: confirmação deve ser APLICAR_CARGOS.');
@@ -13,7 +13,7 @@ if (MODE === 'apply' && CONFIRM !== 'APLICAR_CARGOS') {
 const discoveryResponse = await fetch('https://micup.gg/.well-known/fluxer');
 if (!discoveryResponse.ok) throw new Error(`Falha na descoberta Micup: HTTP ${discoveryResponse.status}`);
 const discovery = await discoveryResponse.json();
-const api = discovery?.endpoints?.api_public?.replace(/\\/$/, '');
+const api = discovery?.endpoints?.api_public?.replace(/\/$/, '');
 if (!api) throw new Error('Endpoint público da API Micup não encontrado.');
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -69,7 +69,7 @@ console.log(`Servidor: ${GUILD_ID}`);
 console.log(`Cargos existentes: ${roles.length}`);
 console.log(`Modo: ${MODE === 'preview' ? 'SIMULAÇÃO — sem alterações' : 'APLICAÇÃO'}`);
 console.log(missing.length
-  ? missing.map((role, index) => `${index + 1}. CRIAR ${role.name} — cor #${role.color.toString(16).padStart(6, '0')}`).join('\\n')
+  ? missing.map((role, index) => `${index + 1}. CRIAR ${role.name} — cor #${role.color.toString(16).padStart(6, '0')}`).join('\n')
   : 'Todos os cargos propostos já existem.');
 console.log('Nenhum cargo existente será editado ou excluído.');
 console.log('Nenhuma permissão administrativa será concedida automaticamente.');
