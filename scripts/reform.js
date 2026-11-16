@@ -23,22 +23,34 @@ const discovery = await discoveryResponse.json();
 const api = discovery?.endpoints?.api_public?.replace(/\/$/, '');
 if (!api) throw new Error('O Micup não informou endpoints.api_public.');
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 async function request(path, options = {}) {
-  const response = await fetch(`${api}/v1${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bot ${TOKEN}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    const response = await fetch(`${api}/v1${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bot ${TOKEN}`,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+    const body = await response.text();
+    let data;
+    try { data = body ? JSON.parse(body) : null; } catch { data = body; }
+    if (response.status === 429 && attempt < 6) {
+      const retryAfter = Number(data?.retry_after || response.headers.get('retry-after') || 3);
+      const waitMs = Math.ceil((retryAfter + 0.75) * 1000);
+      console.log(`Limite temporário da API. Aguardando ${(waitMs / 1000).toFixed(1)}s antes de tentar novamente...`);
+      await sleep(waitMs);
+      continue;
     }
-  });
-  const body = await response.text();
-  let data;
-  try { data = body ? JSON.parse(body) : null; } catch { data = body; }
-  if (!response.ok) {
-    throw new Error(`Micup API ${response.status} em ${path}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+    if (!response.ok) {
+      throw new Error(`Micup API ${response.status} em ${path}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+    }
+    return data;
   }
-  return data;
+  throw new Error(`Micup API continuou limitando as requisições em ${path} após várias tentativas.`);
 }
 
 const desired = [
@@ -96,6 +108,7 @@ if (MODE === 'preview') process.exit(0);
 for (const category of desired) {
   let parent = channels.find(c => c.type === 4 && c.name.toLowerCase() === category.name.toLowerCase());
   if (!parent) {
+    await sleep(1100);
     parent = await request(`/guilds/${GUILD_ID}/channels`, {
       method: 'POST',
       body: JSON.stringify({ name: category.name, type: 4 })
@@ -106,6 +119,7 @@ for (const category of desired) {
   for (const child of category.children) {
     let found = channels.find(c => c.type === child.type && c.name.toLowerCase() === child.name.toLowerCase());
     if (!found) {
+      await sleep(1100);
       found = await request(`/guilds/${GUILD_ID}/channels`, {
         method: 'POST',
         body: JSON.stringify({ name: child.name, type: child.type, parent_id: parent.id })
@@ -113,6 +127,7 @@ for (const category of desired) {
       channels.push(found);
       console.log(`Criado canal: ${child.name}`);
     } else if (found.parent_id !== parent.id && child.existing) {
+      await sleep(1100);
       const moved = await request(`/channels/${found.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ parent_id: parent.id })
