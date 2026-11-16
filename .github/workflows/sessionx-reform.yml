@@ -6,6 +6,7 @@ on:
       guild_id:
         description: 'ID numérico do servidor Session X'
         required: true
+        default: '1571678876961607681'
         type: string
       mode:
         description: 'preview apenas simula; apply executa as mudanças'
