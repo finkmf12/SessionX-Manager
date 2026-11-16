@@ -1,4 +1,4 @@
-name: Session X - Criar cargos neon
+name: Session X - Configurar cargos e permissões
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         default: '1571678876961607681'
         type: string
       mode:
-        description: 'preview apenas simula; apply cria os cargos'
+        description: 'preview apenas simula; apply configura permissões e cria somente cargos ausentes'
         required: true
         type: choice
         options:
@@ -17,7 +17,7 @@ on:
           - apply
         default: preview
       confirmation:
-        description: 'Digite APLICAR_CARGOS somente para criar os cargos'
+        description: 'Digite APLICAR_CARGOS para aplicar as permissões'
         required: false
         type: string
 
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Criar cargos
+      - name: Configurar permissões dos cargos
         env:
           MICUP_TOKEN: ${{ secrets.MICUP_TOKEN }}
           MICUP_GUILD_ID: ${{ inputs.guild_id }}
