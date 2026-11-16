@@ -45,7 +45,7 @@ const desired = [
   { name: 'INFORMAÇÕES', type: 4, children: [
     { name: 'boas-vindas', type: 0 },
     { name: 'regras', type: 0 },
-    { name: 'anúncios', type: 5 }
+    { name: 'anúncios', type: 0 }
   ]},
   { name: 'COMUNIDADE', type: 4, children: [
     { name: 'chat', type: 0, existing: true },
