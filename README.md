@@ -1,6 +1,6 @@
 # Session X Manager
 
-Bot de administração para o servidor Session X no Micup.
+Bot de administração para o servidor Session X no Micup (Aplicativo de Comunicação estilo Discord, mas funciona igual).
 
 ## Reforma da comunidade (execução única)
 
@@ -11,7 +11,7 @@ O repositório inclui uma automação segura para organizar a Session X com visu
 - **COMUNIDADE:** chat (existente), mídia, memes, sugestões
 - **GAMING:** procurando-grupo, clips-e-gameplay
 - **SALAS DE VOZ:** Geral (existente), Duo / Trio, Squad
-- **EQUIPE:** staff-chat, moderação
+- **EQUIPE:** staff-chat, moderaçãO
 
 ## Cargos neon
 
